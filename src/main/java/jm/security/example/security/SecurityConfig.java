@@ -11,7 +11,7 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 
-@Configuration
+//@Configuration - присутсвует в @EnableWebSecurity, поэтому не требуется
 @EnableWebSecurity
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
     private final UserDetailsService userDetailsService; // сервис, с помощью которого тащим пользователя
@@ -29,12 +29,17 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        // http.csrf().disable(); - попробуйте выяснить сами, что это даёт
+        // http.csrf().disable(); - Защита CSRF включена по умолчанию в конфигурации Java. Мы все еще можем отключить его, если нам нужно.
         http.authorizeRequests()
                 .antMatchers("/").permitAll() // доступность всем
-                .antMatchers("/user").access("hasAnyRole('ROLE_USER')") // разрешаем входить на /user пользователям с ролью User
+                .antMatchers("/user").access("hasAnyRole('ROLE_USER', 'ROLE_ADMIN')") // разрешаем входить на /user пользователям с ролью User, Admin
+                .antMatchers("/admin/**").access("hasAnyRole('ROLE_ADMIN')") // разрешает входить на /admin пользователю с ролью Admin
                 .and().formLogin()  // Spring сам подставит свою логин форму
-                .successHandler(successUserHandler); // подключаем наш SuccessHandler для перенеправления по ролям
+                .successHandler(successUserHandler) // подключаем наш SuccessHandler для перенеправления по ролям
+                .and().logout()
+                .logoutUrl("/logout") //URL-адрес, запускающий выход из системы (по умолчанию "/ logout").
+                .logoutSuccessUrl("/login") //URL-адрес для перенаправления после выхода из системы.
+                .and().csrf().disable();
     }
 
     // Необходимо для шифрования паролей
